@@ -1,0 +1,18 @@
+name: insar-mintpy
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - h5py
+  - rasterio
+  - gdal
+  - pyproj
+  - shapely
+  - geopandas
+  - pip
+  - pip:
+      - mintpy==1.6.2
