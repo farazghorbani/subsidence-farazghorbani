@@ -1,18 +1,16 @@
-name: insar-mintpy
+name: insar-env
 channels:
   - conda-forge
+  - defaults
 dependencies:
-  - python=3.10
+  - python=3.9
   - numpy
   - scipy
-  - pandas
   - matplotlib
-  - h5py
-  - rasterio
   - gdal
-  - pyproj
-  - shapely
+  - rasterio
   - geopandas
+  - h5py
   - pip
   - pip:
-      - mintpy==1.6.2
+      - mintpy
