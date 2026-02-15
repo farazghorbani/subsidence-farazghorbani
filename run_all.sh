@@ -1,13 +1,22 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
 
-WORKDIR="$(pwd)"
+echo "=== Running InSAR processing pipeline ==="
 
-# این مسیر را استاد/کاربر باید تنظیم کند:
-# مسیر پروژه ISCE که داخلش smallbaselineApp.cfg اجرا می‌شود
-ISCE_DIR="${WORKDIR}/work/PROJECT_NAME/ISCE"
+# Step 1: ISCE processing (assumes config prepared)
+echo "Running ISCE..."
+topsApp.py --steps
 
-CFG="${WORKDIR}/configs/smallbaselineApp.cfg"
+# Step 2: MintPy time-series
+echo "Running MintPy..."
+smallbaselineApp.py mintpy_config.txt
+
+# Step 3: Post-processing
+echo "Running custom scripts..."
+python scripts/py/los_to_vertical.py
+python scripts/py/visualize_vertical_map.py
+python scripts/py/analyze_vertical_roi.py
+
+echo "=== Processing completed ==="
 
 echo "[INFO] WORKDIR: ${WORKDIR}"
 echo "[INFO] ISCE_DIR: ${ISCE_DIR}"
