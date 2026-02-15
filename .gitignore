@@ -1,41 +1,24 @@
-# ====== Do NOT commit large SAR data ======
-**/*.SAFE/
-**/*.zip
-**/*.tar
-**/*.tgz
-SLC*/
-SLC_ORIG*/
-
-# ====== Do NOT commit processing outputs ======
-projects/
+# ISCE / MintPy large data
+data/
 work/
-mintpy_inputs/
-**/mintpy_inputs/
-**/*.h5
-**/*.unw
-**/*.unw.*
-**/*.cor
-**/*.cor.*
-**/*.int
-**/*.int.*
-**/*.slc
-**/*.slc.*
-**/*.geo
-**/*.geo.*
-**/*.vrt
-**/*.xml
-**/*.rsc
+outputs/
+SLC_ORIG/
+*.slc
+*.zip
+*.SAFE
+*.h5
+*.vrt
+*.xml
+*.log
+*.rsc
 
-# regenerated outputs
-outputs/paper_figs/*
-outputs/paper_tables/*
-!outputs/paper_figs/README.md
-!outputs/paper_tables/README.md
-
-# python/cache
+# Python
 __pycache__/
 *.pyc
 
-# OS/editor
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
 .DS_Store
-.vscode/
+
