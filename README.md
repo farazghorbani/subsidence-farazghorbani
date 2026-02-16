@@ -1,85 +1,197 @@
-Subsidence Monitoring using ISCE2 + MintPy
+Reproducible Sentinel-1 InSAR Processing Pipeline
+ISCE2 (TOPS) + MintPy (SBAS Time-Series)
 
-Reproducible InSAR processing pipeline for land subsidence monitoring using Sentinel-1 data, ISCE2, and MintPy.
-This repository contains code-only workflow (no raw SAR data).
 
-1. Requirements
 
-Linux (Ubuntu recommended)
 
-Conda / Miniconda
 
-ISCE2 installed and configured
 
-SNAP is NOT used in this workflow
 
-2. Clone Repository
-git clone https://github.com/farazghorbani/subsidence-farazghorbani.git
-cd subsidence-farazghorbani
 
-3. Create Conda Environment
-conda env create -f environment.yml
-conda activate insar-env
 
-4. Project Structure
 
-Place your ISCE2 processed project in:
+📌 Overview
 
-work/PROJECT_NAME/ISCE/
+This repository provides a fully reproducible, end-to-end InSAR processing pipeline for Sentinel-1 data using:
+
+ISCE2 (TOPS mode) → Interferometric processing
+
+MintPy (SBAS) → Time-series deformation analysis
+
+The workflow is designed for:
+
+🎓 Academic research
+
+📈 Ground deformation / subsidence studies
+
+🔁 Reproducible thesis results
+
+🧠 Processing Workflow
+Sentinel-1 SAFE / SLC
+        │
+        ▼
+ISCE2 (TOPSApp)
+  - Coregistration
+  - Interferogram formation
+  - Filtering
+  - Unwrapping
+        │
+        ▼
+MintPy (SmallBaselineApp)
+  - Stack loading
+  - Network inversion
+  - Time-series estimation
+  - Velocity estimation
+        │
+        ▼
+Final deformation maps & time-series
+
+🗂 Repository Structure
+subsidence-farazghorbani_repo/
+│
+├── configs/
+│   ├── topsApp.xml
+│   └── smallbaselineApp.cfg
+│
+├── run_all.sh
+├── environment.yml
+└── README.md
+
+📁 Expected Working Directory Structure
+
+The pipeline expects this structure outside the repo:
+
+<WORKDIR>/
+│
+├── data/
+│   ├── SAFE/        (Sentinel-1 SAFE or .zip)
+│   ├── SLC/         (Optional: prepared SLC stack)
+│   ├── ORBIT/       (Precise orbit files)
+│   └── DEM/         (DEM files)
+│
+├── work/
+│   └── <PROJECT>/
+│
+└── outputs/
 
 
 Example:
 
-work/tehran_s1_test/ISCE/
+/mnt/data2/insar_chain
+
+⚙️ Installation
+1️⃣ Create Conda Environment
+conda env create -f environment.yml
+conda activate insar-full
+
+2️⃣ Verify Installation
+which topsApp.py
+which smallbaselineApp.py
 
 
-The ISCE directory must contain interferograms and geometry files required by MintPy.
+Both must return valid paths.
 
-5. Run Full Processing
-chmod +x run_all.sh
-./run_all.sh
+🛰 Supported Input Modes
+
+The pipeline supports two modes:
+
+Mode	Description	Recommended
+SAFE	Raw Sentinel-1 SAFE / zip files	✅ Yes
+SLC	Pre-processed SLC stack	Optional
+▶️ Running the Pipeline
+
+Go to repository root:
+
+cd subsidence-farazghorbani_repo
+conda activate insar-full
+
+✅ SAFE Mode (Full Automatic Processing)
+./run_all.sh \
+  /mnt/data2/insar_chain \
+  tehran_s1_test \
+  configs/smallbaselineApp.cfg \
+  --mode safe
+
+✅ SLC Mode
+./run_all.sh \
+  /mnt/data2/insar_chain \
+  tehran_s1_test \
+  configs/smallbaselineApp.cfg \
+  --mode slc
+
+🧾 Command Arguments
+Argument	Description
+WORKDIR	Root working directory
+PROJECT	Project name
+CFG	MintPy configuration file
+--mode	safe or slc
+--skip-isce	Skip ISCE step
+--reset-mintpy	Remove MintPy results before rerun
+📤 Outputs
+
+After successful execution:
+
+ISCE results:
+<WORKDIR>/work/<PROJECT>/ISCE
+
+MintPy results:
+<WORKDIR>/work/<PROJECT>/mintpy
+
+Final figures:
+<WORKDIR>/outputs
+
+🔬 Reproducibility Statement
+
+This pipeline guarantees reproducibility through:
+
+Fixed configuration files
+
+Controlled Conda environment
+
+Deterministic processing order
+
+Explicit directory structure
+
+Tested with:
+
+ISCE2 v2.6.x
+
+MintPy (stable release)
+
+Python 3.9
+
+Sentinel-1 IW TOPS mode
+
+Results are reproducible given identical input datasets.
+
+🛠 Troubleshooting
+❌ SAFE_DIR not found
+
+Ensure:
+
+<WORKDIR>/data/SAFE
 
 
-This script will execute:
+contains Sentinel-1 SAFE or zip files.
 
-MintPy smallbaselineApp workflow
+❌ smallbaselineApp.cfg not found
 
-Network inversion
+Pass config relative to repo root:
 
-Topographic correction
+configs/smallbaselineApp.cfg
 
-Velocity estimation
+❌ ISCE preprocess NoneType error
 
-Vertical displacement conversion
+Usually caused by:
 
-Figure/table generation
+Empty SAFE directory
 
-6. Outputs
+Missing orbit files
 
-Main outputs are generated inside:
+Missing DEM
 
-work/PROJECT_NAME/ISCE/
+Verify:
 
-
-Including:
-
-velocity.h5
-
-velocity_vertical.h5
-
-temporalCoherence.h5
-
-timeseries.h5
-
-Generated figures and tables:
-
-outputs/paper_figs/
-outputs/paper_tables/
-
-7. Notes
-
-SNAP is not used in this workflow.
-
-Raw Sentinel-1 SLC files are NOT included in this repository.
-
-User must prepare ISCE2 project before running MintPy
+ls <WORKDIR>/data/SAFE
+ls <WORKDIR>/data/ORBIT
+ls <WORKDIR>/data/DEM
