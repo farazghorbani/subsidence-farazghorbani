@@ -1,62 +1,76 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "=== Reproducible ISCE2 + MintPy pipeline ==="
+echo "=== FULL Reproducible ISCE2 + MintPy + Paper Outputs ==="
 
-# -------------------------
-# Usage
-# -------------------------
 if [[ $# -lt 2 ]]; then
-  echo "Usage:"
-  echo "  bash run_all.sh <WORKDIR> <PROJECT_NAME> [CFG_PATH]"
-  echo ""
-  echo "Example:"
-  echo "  bash run_all.sh /mnt/data2/insar_chain tehran_s1_test configs/smallbaselineApp.cfg"
-  exit 1
+echo "Usage:"
+echo " bash run_all.sh <WORKDIR> <PROJECT_NAME> [CFG]"
+exit 1
 fi
 
 WORKDIR="$(realpath "$1")"
-PROJECT_NAME="$2"
-CFG="${3:-$WORKDIR/configs/smallbaselineApp.cfg}"
+PROJECT="$2"
+CFG_INPUT="${3:-configs/smallbaselineApp.cfg}"
 
-ISCE_DIR="${WORKDIR}/work/${PROJECT_NAME}/ISCE"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "[INFO] WORKDIR    : ${WORKDIR}"
-echo "[INFO] PROJECT    : ${PROJECT_NAME}"
-echo "[INFO] ISCE_DIR   : ${ISCE_DIR}"
-echo "[INFO] MintPy CFG : ${CFG}"
+if [[ -f "${CFG_INPUT}" ]]; then
+CFG="$(realpath "${CFG_INPUT}")"
+else
+CFG="$(realpath "${REPO_DIR}/${CFG_INPUT}")"
+fi
 
-# outputs
-mkdir -p "${WORKDIR}/outputs/paper_figs" "${WORKDIR}/outputs/paper_tables"
+ISCE_DIR="${WORKDIR}/work/${PROJECT}/ISCE"
+TOPS_XML="${REPO_DIR}/configs/topsApp.xml"
+SLC_DIR="${REPO_DIR}/data/SLC"
 
-# sanity checks
-command -v topsApp.py >/dev/null 2>&1 || { echo "[ERROR] topsApp.py not found in PATH"; exit 1; }
-command -v smallbaselineApp.py >/dev/null 2>&1 || { echo "[ERROR] smallbaselineApp.py not found in PATH"; exit 1; }
+OUT_FIGS="${WORKDIR}/outputs/paper_figs"
+OUT_TABLES="${WORKDIR}/outputs/paper_tables"
 
+mkdir -p "${OUT_FIGS}" "${OUT_TABLES}"
+
+echo "[INFO] WORKDIR : ${WORKDIR}"
+echo "[INFO] PROJECT : ${PROJECT}"
+echo "[INFO] ISCE_DIR : ${ISCE_DIR}"
+echo "[INFO] CFG : ${CFG}"
+
+# --------------------------------------------------
+# Environment check
+# --------------------------------------------------
+if ! command -v smallbaselineApp.py >/dev/null 2>&1; then
+echo "[ERROR] MintPy not found. Activate environment."
+exit 1
+fi
+
+if ! command -v topsApp.py >/dev/null 2>&1; then
+echo "[ERROR] ISCE topsApp.py not found."
+exit 1
+fi
+
+# --------------------------------------------------
+# STEP 1: ISCE (if needed)
+# --------------------------------------------------
 if [[ ! -d "${ISCE_DIR}" ]]; then
-  echo "[ERROR] ISCE_DIR not found: ${ISCE_DIR}"
-  echo "Put your ISCE project here:"
-  echo "  ${WORKDIR}/work/${PROJECT_NAME}/ISCE"
-  exit 1
+echo "=== Running ISCE ==="
+mkdir -p "${ISCE_DIR}"
+cp "${TOPS_XML}" "${ISCE_DIR}/topsApp.xml"
+cd "${ISCE_DIR}"
+topsApp.py --steps
+else
+echo "[INFO] ISCE already exists → skipping"
 fi
 
-if [[ ! -f "${CFG}" ]]; then
-  echo "[ERROR] MintPy config not found: ${CFG}"
-  exit 1
+# Validate structure
+if [[ ! -d "${ISCE_DIR}/mintpy_inputs" ]]; then
+echo "[ERROR] mintpy_inputs missing → ISCE failed"
+exit 1
 fi
 
-# -------------------------
-# Step 1: ISCE (optional)
-# -------------------------
-# If you want to run ISCE, uncomment the next lines.
-# echo "[STEP] Running ISCE topsApp..."
-# cd "${ISCE_DIR}"
-# topsApp.py --steps
-
-# -------------------------
-# Step 2: MintPy
-# -------------------------
-echo "[STEP] Running MintPy processing..."
+# --------------------------------------------------
+# STEP 2: MintPy
+# --------------------------------------------------
+echo "=== Running MintPy ==="
 cd "${ISCE_DIR}"
 
 smallbaselineApp.py "${CFG}" --dostep load_data
@@ -67,16 +81,29 @@ smallbaselineApp.py "${CFG}" --dostep correct_topography
 smallbaselineApp.py "${CFG}" --dostep residual_RMS
 smallbaselineApp.py "${CFG}" --dostep velocity
 
-# -------------------------
-# Step 3: Post-processing scripts
-# -------------------------
-echo "[STEP] Running custom post-processing scripts..."
-cd "${WORKDIR}"
+# --------------------------------------------------
+# STEP 3: Paper Figures & Tables
+# --------------------------------------------------
+echo "=== Generating Paper Outputs ==="
 
+cd "${REPO_DIR}"
+
+if [[ -f scripts/py/los_to_vertical.py ]]; then
 python scripts/py/los_to_vertical.py
-python scripts/py/visualize_vertical_map.py
-python scripts/py/analyze_vertical_roi.py
+fi
 
-echo "=== DONE ==="
-echo "[DONE] MintPy outputs are in: ${ISCE_DIR}"
-echo "[DONE] Figures/tables output folder: ${WORKDIR}/outputs"
+if [[ -f scripts/py/visualize_vertical_map.py ]]; then
+python scripts/py/visualize_vertical_map.py
+fi
+
+if [[ -f scripts/py/analyze_vertical_roi.py ]]; then
+python scripts/py/analyze_vertical_roi.py
+fi
+
+echo ""
+echo "=========================================="
+echo " FULL PIPELINE COMPLETED SUCCESSFULLY"
+echo "=========================================="
+echo "ISCE/MintPy results: ${ISCE_DIR}"
+echo "Figures folder : ${OUT_FIGS}"
+echo "Tables folder : ${OUT_TABLES}"
